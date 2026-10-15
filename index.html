@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conformidades de servicio · Mantenimiento de equipos</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --text: #1d2330; --muted: #667085;
+    --line: #e4e7ec; --brand: #0b5cab; --brand-dark: #084a8c; --ok: #12805c;
+    --warn: #b54708; --err: #b42318; --chip: #eaf2fb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161d; --card: #1a202a; --text: #e8ecf3; --muted: #98a2b3;
+      --line: #2a3340; --brand: #4d9bea; --brand-dark: #7ab6f2; --ok: #3ccf9b;
+      --warn: #f5a45c; --err: #f97066; --chip: #1f2c3d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+           padding: 18px 24px; background: var(--card); border-bottom: 1px solid var(--line); }
+  h1 { font-size: 18px; margin: 0; }
+  .sub { color: var(--muted); font-size: 13px; }
+  main { max-width: 1200px; margin: 0 auto; padding: 20px 24px 48px; }
+  button { font: inherit; cursor: pointer; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--card); color: var(--text); padding: 8px 14px; }
+  button:hover { border-color: var(--brand); }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+  button.primary:hover { background: var(--brand-dark); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .kpi b { display: block; font-size: 24px; }
+  .kpi span { color: var(--muted); font-size: 13px; }
+  .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  input, select { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+                  background: var(--card); color: var(--text); }
+  input[type=search] { flex: 1 1 260px; }
+  .msg { padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; display: none; }
+  .msg.show { display: block; }
+  .msg.info { background: var(--chip); color: var(--brand-dark); }
+  .msg.ok { background: rgba(18,128,92,.12); color: var(--ok); }
+  .msg.warn { background: rgba(181,71,8,.12); color: var(--warn); }
+  .msg.err { background: rgba(180,35,24,.12); color: var(--err); }
+  .tabla-wrap { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; min-width: 860px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  tr:last-child td { border-bottom: 0; }
+  td.num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .eq { max-width: 420px; }
+  .detalle td { background: var(--bg); }
+  .archivos { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .archivos li { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 99px; background: var(--chip); color: var(--brand-dark); }
+  .tag.informe { background: rgba(18,128,92,.14); color: var(--ok); }
+  a { color: var(--brand); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .vacio { padding: 32px; text-align: center; color: var(--muted); }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor;
+          border-right-color: transparent; border-radius: 50%; animation: g .7s linear infinite; vertical-align: -2px; }
+  @keyframes g { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Conformidades de servicio · Mantenimiento de equipos</h1>
+    <div class="sub" id="ultima">Sin datos cargados</div>
+  </div>
+  <div>
+    <button class="primary" id="btnActualizar">Actualizar</button>
+  </div>
+</header>
+
+<main>
+  <div class="msg" id="msg"></div>
+
+  <section class="kpis">
+    <div class="kpi"><b id="kTotal">0</b><span>Conformidades registradas</span></div>
+    <div class="kpi"><b id="k2025">0</b><span>Año 2025</span></div>
+    <div class="kpi"><b id="k2026">0</b><span>Año 2026</span></div>
+    <div class="kpi"><b id="kProv">0</b><span>Proveedores</span></div>
+  </section>
+
+  <section class="filtros">
+    <input type="search" id="buscar" placeholder="Buscar por orden, HES, proveedor o equipo…">
+    <select id="fAnio"><option value="">Todos los años</option></select>
+    <select id="fProv"><option value="">Todos los proveedores</option></select>
+  </section>
+
+  <div class="tabla-wrap">
+    <table>
+      <thead>
+        <tr><th>Fecha</th><th>Orden</th><th>HES</th><th>Proveedor</th><th>Equipo / servicio</th><th>Informes</th><th>Correo</th></tr>
+      </thead>
+      <tbody id="cuerpo"></tbody>
+    </table>
+    <div class="vacio" id="vacio" hidden>No hay resultados.</div>
+  </div>
+</main>
+
+<script>
+/* ===== Configuración ===== */
+const API = 'https://script.google.com/macros/s/AKfycbxhbkxlhznvXFC51cpDkJSJ7O1FzpDVaTeYIU3Bl0eeM0zfv9lq56NqZUTB-Zbz-W00/exec';
+const LS_CLAVE = 'conformidades_clave';
+
+/* ===== Estado ===== */
+let datos = [];
+const cacheArchivos = {};   // carpetaId -> lista de archivos
+
+/* ===== Utilidades ===== */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g,
+  (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function aviso(texto, tipo = 'info') {
+  const m = $('msg');
+  m.className = 'msg show ' + tipo;
+  m.textContent = texto;
+}
+function ocultarAviso() { $('msg').className = 'msg'; }
+
+function obtenerClave() {
+  let k = localStorage.getItem(LS_CLAVE);
+  if (!k) {
+    k = prompt('Clave de acceso al panel:') || '';
+    if (k) localStorage.setItem(LS_CLAVE, k);
+  }
+  return k;
+}
+
+async function llamar(accion, extra = {}) {
+  const params = new URLSearchParams({ action: accion, key: obtenerClave(), ...extra });
+  const r = await fetch(API + '?' + params.toString());
+  if (!r.ok) throw new Error('Error de red (' + r.status + ')');
+  const j = await r.json();
+  if (!j.ok) {
+    if (/clave/i.test(j.error || '')) localStorage.removeItem(LS_CLAVE);
+    throw new Error(j.error || 'Error desconocido');
+  }
+  return j;
+}
+
+/* ===== Carga y render ===== */
+async function cargar() {
+  try {
+    const j = await llamar('listar');
+    datos = j.datos;
+    $('ultima').textContent = 'Última lectura: ' + new Date().toLocaleString('es-PE');
+    llenarFiltros();
+    render();
+  } catch (e) {
+    aviso(e.message, 'err');
+  }
+}
+
+function llenarFiltros() {
+  const anios = [...new Set(datos.map(d => d.fecha.slice(0, 4)))].sort().reverse();
+  const provs = [...new Set(datos.map(d => d.proveedor).filter(Boolean))].sort();
+  const aSel = $('fAnio').value, pSel = $('fProv').value;
+  $('fAnio').innerHTML = '<option value="">Todos los años</option>' +
+    anios.map(a => `<option ${a === aSel ? 'selected' : ''}>${esc(a)}</option>`).join('');
+  $('fProv').innerHTML = '<option value="">Todos los proveedores</option>' +
+    provs.map(p => `<option ${p === pSel ? 'selected' : ''}>${esc(p)}</option>`).join('');
+
+  $('kTotal').textContent = datos.length;
+  $('k2025').textContent = datos.filter(d => d.fecha.startsWith('2025')).length;
+  $('k2026').textContent = datos.filter(d => d.fecha.startsWith('2026')).length;
+  $('kProv').textContent = provs.length;
+}
+
+function filtrados() {
+  const q = $('buscar').value.trim().toLowerCase();
+  const a = $('fAnio').value, p = $('fProv').value;
+  return datos.filter(d =>
+    (!a || d.fecha.startsWith(a)) &&
+    (!p || d.proveedor === p) &&
+    (!q || [d.orden, d.hes, d.proveedor, d.equipo, d.asunto].join(' ').toLowerCase().includes(q))
+  );
+}
+
+function render() {
+  const lista = filtrados();
+  $('vacio').hidden = lista.length > 0;
+  $('cuerpo').innerHTML = lista.map((d, i) => `
+    <tr data-i="${i}">
+      <td class="num">${esc(d.fecha)}</td>
+      <td class="num">${esc(d.orden)}</td>
+      <td class="num">${esc(d.hes)}</td>
+      <td>${esc(d.proveedor)}</td>
+      <td class="eq">${esc(d.equipo)}</td>
+      <td>${d.carpetaId ? `<button data-informes="${esc(d.carpetaId)}" data-fila="${i}">Ver informes</button>` : '—'}</td>
+      <td>${d.gmail ? `<a href="${esc(d.gmail)}" target="_blank" rel="noopener">Abrir</a>` : '—'}</td>
+    </tr>
+    <tr class="detalle" id="det-${i}" hidden><td colspan="7"></td></tr>`).join('');
+}
+
+/* ===== Informes (archivos en Drive) ===== */
+async function alternarInformes(btn) {
+  const id = btn.dataset.informes, fila = btn.dataset.fila;
+  const det = $('det-' + fila), celda = det.firstElementChild;
+
+  if (!det.hidden) { det.hidden = true; btn.textContent = 'Ver informes'; return; }
+  det.hidden = false; btn.textContent = 'Ocultar';
+  celda.innerHTML = '<span class="spin"></span> Consultando Drive…';
+
+  try {
+    if (!cacheArchivos[id]) cacheArchivos[id] = (await llamar('archivos', { carpeta: id })).archivos;
+    const arch = cacheArchivos[id];
+    celda.innerHTML = arch.length
+      ? '<ul class="archivos">' + arch.map(f => `
+          <li>
+            <span class="tag ${f.rol === 'informe' ? 'informe' : ''}">${esc(f.rol)}</span>
+            <a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.nombre)}</a>
+            <span class="sub">${f.kb} KB</span>
+          </li>`).join('') + '</ul>'
+      : 'La carpeta no tiene archivos.';
+  } catch (e) {
+    celda.innerHTML = `<span style="color:var(--err)">${esc(e.message)}</span>`;
+  }
+}
+
+/* ===== Actualizar desde Gmail ===== */
+async function actualizar() {
+  const btn = $('btnActualizar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Actualizando…';
+  aviso('Buscando correos nuevos en Gmail y guardando adjuntos en Drive. Puede tardar unos minutos…', 'info');
+  try {
+    const r = await llamar('actualizar');
+    await cargar();
+    if (r.completo === false) {
+      aviso(`Se guardaron ${r.guardados} correos, pero aún quedan pendientes. Pulsa Actualizar otra vez.`, 'warn');
+    } else {
+      aviso(r.guardados
+        ? `Listo: ${r.guardados} correos nuevos guardados.`
+        : 'No hay correos nuevos.', 'ok');
+    }
+  } catch (e) {
+    aviso(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Actualizar';
+  }
+}
+
+/* ===== Eventos ===== */
+$('btnActualizar').addEventListener('click', actualizar);
+['buscar', 'fAnio', 'fProv'].forEach(id => $(id).addEventListener('input', render));
+$('cuerpo').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-informes]');
+  if (b) alternarInformes(b);
+});
+
+cargar();
+</script>
+</body>
+</html>
