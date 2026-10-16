@@ -56,8 +56,8 @@ function render() {
           ? `<div><span class="tag informe">Logística ✓</span><div class="sub">${esc(d.respondido)}</div></div>`
           : ''}
         ${d.respondidoJorge
-          ? `<div><span class="tag informe">Ing. Díaz ✓</span><div class="sub">${esc(d.respondidoJorge)}</div></div>`
-          : `<button data-responder="${esc(d.id)}" data-destino="jorge">Responder a Jorge Díaz</button>`}
+          ? `<div><span class="tag informe">Conformidad otorgada ✓</span><div class="sub">${esc(d.respondidoJorge)}</div></div>`
+          : `<button data-responder="${esc(d.id)}" data-destino="jorge">¿Es Conforme?</button>`}
       </div></td>
     </tr>
     <tr class="detalle" id="det-${i}" hidden><td colspan="7"></td></tr>`).join('');
